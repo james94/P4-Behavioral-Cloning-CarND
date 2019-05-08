@@ -22,7 +22,7 @@ for line in lines:
     filename = source_path.split('/')[-1]
     # then I can add that filename to the end of the path to the IMG
     # directory here on the AWS instance
-    current_path = '../data/IMG/'
+    current_path = './data/input/IMG/' + filename
     # once I have the current path, I can use opencv to load the image
     image = cv2.imread(current_path)
     # append loaded image to images list
@@ -65,7 +65,7 @@ model.compile(loss='mse', optimizer='adam')
 # with 10 epochs (keras default) that validation loss decreases with just 7,
 # then increases. Thus, at 10 epochs, I may have been overfitting training data.
 # Hence, at 7 epochs, the validation loss decreases for almost all the epochs.
-model.fit(X_train, y_train, validation_split=0.2, shuffle=True, np_epoch=7)
+model.fit(X_train, y_train, validation_split=0.2, shuffle=True, epochs=7)
 
 # finally I'll save the trained model, so later I can download it onto my 
 # local machine and see how well it works for driving the simulator
