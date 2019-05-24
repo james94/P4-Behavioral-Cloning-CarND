@@ -34,7 +34,7 @@ with open('./data/input/driving_log.csv') as csvfile:
         steering_right = steering_center - correction
         
         # read in images from center, left and right cameras
-        basepath = training_datapath + brand + "/"
+        basepath = "./data/input/IMG/"
         image_center = get_image(basepath, row[0])
         image_left = get_image(basepath, row[1])
         image_right = get_image(basepath, row[2])
