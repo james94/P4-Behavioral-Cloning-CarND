@@ -85,7 +85,7 @@ model = Sequential()
 # Data preprocessing to normalize input images
 model.add(Lambda(lambda x: (x/255.0) - 0.5, input_shape = (160, 320, 3)))
 # Crop2D layer used to remove top 40 pixels, bottom 30 pixels of image
-model.add(Cropping2D(cropping = ((50,20), (0,0))))
+model.add(Cropping2D(cropping = ((70,25), (0,0))))
 # Layer 2: Convolutional. 24 filters, 5 kernel, 5 stride, relu activation function
 model.add(Conv2D(24,5,5, subsample = (2,2), activation = "relu"))
 # Layer 3: Convolutional. 36 filters
