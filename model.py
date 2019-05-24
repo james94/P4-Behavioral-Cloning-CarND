@@ -2,38 +2,67 @@ import csv
 import cv2
 import numpy as np
 
-# read and store lines from driving_log.csv
-lines = []
-with open('./data/input/driving_log.csv') as csvfile:
-    reader = csv.reader(csvfile)
-    # for each line, extract the path to the camera image
-    # but remember that path was recorded on the local machine
-    # since I am on the AWS instance
-    for line in reader:
-        lines.append(line)
-        
-# update camera image path, so it is valid on the AWS instance
-images = []
-steering_measurements = []
-for line in lines:
-    source_path = line[0]
+def get_image(basepath, filepath):
+    # read in images from center, left and right cameras
+    source_path = filepath
     # an easy way to update the path is to split the path on it's
     # slashes and then extract the final token, which is the filename
     filename = source_path.split('/')[-1]
     # then I can add that filename to the end of the path to the IMG
     # directory here on the AWS instance
-    current_path = './data/input/IMG/' + filename
+    img_path_on_fs = basepath + filename
     # once I have the current path, I can use opencv to load the image
-    image = cv2.imread(current_path)
-    # append loaded image to images list
-    images.append(image)
-    
-    # I can do something similar for my steering measurements, which
-    # will serve as my output labels, it'll be easier to load the steering
-    # measurements because there are no paths or images to handle
-    # extract the 4th token from the csv line, then cast it as float
-    steering_measurement = float(line[3])
-    steering_measurements.append(steering_measurement)
+    image = cv2.imread(img_path_on_fs)
+    return image
+
+# read and store lines from driving_log.csv
+images = []
+steering_measurements = []
+with open('./data/input/driving_log.csv') as csvfile:
+    reader = csv.reader(csvfile)
+    # for each line, extract the path to the camera image
+    # but remember that path was recorded on the local machine
+    # since I am on the AWS instance
+    for row in reader:
+        steering_center = float(row[3]) # row, column 3 = steering center angle
+        
+        # create adjusted steering measurements for the side camera images
+        correction = 0.2 # parameter to tune
+        # steering left of center, recover back to center
+        steering_left = steering_center + correction
+        # steering right of center, recover back to center
+        steering_right = steering_center - correction
+        
+        # read in images from center, left and right cameras
+        basepath = training_datapath + brand + "/"
+        image_center = get_image(basepath, row[0])
+        image_left = get_image(basepath, row[1])
+        image_right = get_image(basepath, row[2])
+        
+        # insert multiple elements into list
+        images.extend([image_center, image_left, image_right])
+        steering_measurements.extend([steering_center, steering_left, steering_right])
+
+# Data Augmentation.
+# There's Problem where the model sometimes pulls too hard to the right. 
+# This does/nt make sense since the training track is a loop and the car 
+# drives counterclockwise. So, most of the time the model should learn to steer 
+# to the left. Then in autonomous mode, the model does steer to the left
+# even in situations when staying straight might be best. One approach to mitigate
+# this problem is data augmentation. There are many ways to augment data to expand
+# the training set and help the model generalize better. I could change the brightness
+# on the images or I could shift them horizontally or vertically. In this case,
+# I'll keep things simple and flip the images horizontally like a mirror, then invert
+# the steering angles and I should end up with a balanced dataset that teaches the
+# car to steer clockwise as well as counterclockwise. Just like using side camera data,
+# using data augmentation carries 2 benefits: 1. we have more data to use for training 
+# the network and 2. the data we use for the training the network is more comprehensive.
+augmented_images, augmented_steering_measurements = [], []
+for image, measurement in zip(images, steering_measurements):
+    augmented_images.append(image)
+    augmented_steering_measurements.append(measurement)
+    augmented_images.append(cv2.flip(image,1)) # flip img horizontally
+    augmented_steering_measurements.append(measurement*-1.0) # invert steering
     
 # now that I've loaded the images and steering measurements,
 # I am going to convert them to numpy arrays since that is the format
@@ -46,10 +75,36 @@ y_train = np.array(steering_measurements)
 # a regression network, so I don't have to apply an activation function
 
 from keras.models import Sequential
-from keras.layers import Flatten, Dense
+from keras.layers import Flatten, Dense, Activation, Lambda, Cropping2D
+from keras.layers.convolutional import Conv2D
+from keras.layers.pooling import MaxPooling2D
 
+# Building Net Architecture based on Nvidia Self Driving Car Neural Network 
 model = Sequential()
-model.add(Flatten(input_shape = (160, 320, 3)))
+# Layer 1: Normalization
+# Data preprocessing to normalize input images
+model.add(Lambda(lambda x: (x/255.0) - 0.5, input_shape = (160, 320, 3)))
+# Crop2D layer used to remove top 40 pixels, bottom 30 pixels of image
+model.add(Cropping2D(cropping = ((50,20), (0,0))))
+# Layer 2: Convolutional. 24 filters, 5 kernel, 5 stride, relu activation function
+model.add(Conv2D(24,5,5, subsample = (2,2), activation = "relu"))
+# Layer 3: Convolutional. 36 filters
+model.add(Conv2D(36,5,5, subsample = (2,2), activation = "relu"))
+# Layer 4: Convolutional. 48 filters
+model.add(Conv2D(48,5,5, subsample = (2,2), activation = "relu"))
+# Layer 5: Convolutional. 64 filters
+model.add(Conv2D(64,5,5, activation = "relu"))
+# Layer 6: Convolutional. 64 filters
+model.add(Conv2D(64,5,5, activation = "relu"))
+### Flatten output into a vector
+model.add(Flatten())
+# Layer 7: Fully Connected
+model.add(Dense(100))
+# Layer 8: Fully Connected
+model.add(Dense(50))
+# Layer 9: Fully Connected
+model.add(Dense(10))
+# Layer 10: Fully Connected
 model.add(Dense(1))
 
 # with the network constructed, I will compile the model
@@ -65,6 +120,10 @@ model.compile(loss='mse', optimizer='adam')
 # with 10 epochs (keras default) that validation loss decreases with just 7,
 # then increases. Thus, at 10 epochs, I may have been overfitting training data.
 # Hence, at 7 epochs, the validation loss decreases for almost all the epochs.
+# Change 7 epochs to 5 since we are training over more powerful neural net architecture
+# update with data augmentation: training is going fine and is training on twice as
+# many images as before. That makes sense since I copied each image and then flipped
+# the copy
 model.fit(X_train, y_train, validation_split=0.2, shuffle=True, epochs=7)
 
 # finally I'll save the trained model, so later I can download it onto my 
