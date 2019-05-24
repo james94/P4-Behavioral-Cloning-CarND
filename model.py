@@ -93,9 +93,9 @@ model.add(Conv2D(36,5,5, subsample = (2,2), activation = "relu"))
 # Layer 4: Convolutional. 48 filters
 model.add(Conv2D(48,5,5, subsample = (2,2), activation = "relu"))
 # Layer 5: Convolutional. 64 filters
-model.add(Conv2D(64,5,5, activation = "relu"))
+model.add(Conv2D(64,3,3, activation = "relu"))
 # Layer 6: Convolutional. 64 filters
-model.add(Conv2D(64,5,5, activation = "relu"))
+model.add(Conv2D(64,3,3, activation = "relu"))
 ### Flatten output into a vector
 model.add(Flatten())
 # Layer 7: Fully Connected
