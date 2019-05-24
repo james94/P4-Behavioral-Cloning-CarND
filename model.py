@@ -124,7 +124,7 @@ model.compile(loss='mse', optimizer='adam')
 # update with data augmentation: training is going fine and is training on twice as
 # many images as before. That makes sense since I copied each image and then flipped
 # the copy
-model.fit(X_train, y_train, validation_split=0.2, shuffle=True, epochs=7)
+model.fit(X_train, y_train, validation_split=0.2, shuffle=True, epochs=4)
 
 # finally I'll save the trained model, so later I can download it onto my 
 # local machine and see how well it works for driving the simulator
