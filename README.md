@@ -18,7 +18,7 @@ Contents
 - **[drive.py](drive.py)**: for driving the car in autonomous mode
 - **[model.h5](model.h5)**: containing a trained Keras convolution neural network 
 - **[model.py](model.py)**: containing the script to create and train the model
-- **[video.mp4](video.mp4)**: a video recording of your vehicle driving autonomously around the track for at least one full lap
+- **[video.mp4](video.mp4)**: a video recording of the vehicle driving autonomously around the track for at least one full lap
 - **[video.py](video.py)**: containing the script to create a video based on images found in a `run_[num]` directory
 - **README.md**: provides overview of the project and how to set it up
 - **data/**: contains image data that could be from collecting the simulator data, also contains images used in the writeup
