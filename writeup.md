@@ -41,7 +41,7 @@ python model.py
 
 #### 1. Model Architecture Employed for the Task
 
-My model consists of a convolution neural network (model.py lines 88-130) with 5x5 and 3x3 filter sizes and depths between 24 and 64 using Keras Conv2D function The model includes RELU layers to introduce nonlinearity, the data is normalized in the model using a Keras lambda layer and the data is cropped using Keras Cropping2D function.  
+My model consists of a convolution neural network (model.py lines 76-117) with 5x5 and 3x3 filter sizes and depths between 24 and 64 using Keras Conv2D function The model includes RELU layers to introduce nonlinearity, the data is normalized in the model using a Keras lambda layer and the data is cropped using Keras Cropping2D function.  
 
 ~~~python
 from keras.models import Sequential
@@ -97,11 +97,11 @@ model.add(Dense(1))
 #### 2. Attempts to Reduce Overfitting in the Model
 
 Prior to implementing the model, attempts to reduce overfitting were done using data augmentation techniques like mirroring images, adding left and right images to the dataset in order to help the model generalize better.
-In the model, batch normalization layers were added to regularize the model in order to reduce overfitting (model.py lines 82-108). The model was trained and validated on different data sets to ensure that the model was not overfitting (code line 127). The model was tested by running it through the simulator and ensuring that the vehicle could stay on the track.
+In the model, batch normalization layers were added to regularize the model in order to reduce overfitting (model.py lines 76-117). The model was trained and validated on different data sets to ensure that the model was not overfitting (code line 127). The model was tested by running it through the simulator and ensuring that the vehicle could stay on the track.
 
 #### 3. Model Parameter Tuning
 
-The model used an adam optimizer, so the learning rate was not tuned manually (model.py line 137).
+The model used an adam optimizer, so the learning rate was not tuned manually (model.py line 122).
 
 #### 4. Appropriate Training Data Collected
 

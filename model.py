@@ -3,32 +3,33 @@ import cv2
 import sys
 import numpy as np
 
+# loads image from filepath using opencv
 def get_image(basepath, filepath):
     # read in images from center, left and right cameras
     source_path = filepath
-    # an easy way to update the path is to split the path on it's
-    # slashes and then extract the final token, which is the filename
+    # extract filename from filepath using split and check platform
     if sys.platform == 'win32':
         filename = source_path.split('\\')[-1]
     elif sys.platform == 'linux' or sys.platform == 'darwin':
         filename = source_path.split('/')[-1]
-    # print(filename)
-    # then I can add that filename to the end of the path to the IMG
-    # directory here on the AWS instance
+    # adds filename to end of path to IMG directory, so platform isn't an issue
     img_path_on_fs = basepath + filename
-    # print(img_path_on_fs)
-    # once I have the current path, I can use opencv to load the image
+    # load image using opencv
     image = cv2.imread(img_path_on_fs)
     return image
 
-# read and store lines from driving_log.csv
+# read and store from driving_log.csv
+
+# Extract left, center and right camera images along with their 
+# associated steering angles line by line from driving_log.csv
+# stores driving behavior data into images and steering_measurements list
 images = []
 steering_measurements = []
 with open('./data/input/driving_log.csv') as csvfile:
     reader = csv.reader(csvfile)
     # for each line, extract the path to the camera image
-    # but remember that path was recorded on the local machine
-    # since I am on the AWS instance
+    # considering that the local machine filepath, does processing so it can
+    # run on AWS or other device if needed
     for row in reader:
         steering_center = float(row[3]) # row, column 3 = steering center angle
         
@@ -49,46 +50,32 @@ with open('./data/input/driving_log.csv') as csvfile:
         images.extend([image_center, image_left, image_right])
         steering_measurements.extend([steering_center, steering_left, steering_right])
 
-# Data Augmentation.
-# There's Problem where the model sometimes pulls too hard to the right. 
-# This does/nt make sense since the training track is a loop and the car 
-# drives counterclockwise. So, most of the time the model should learn to steer 
-# to the left. Then in autonomous mode, the model does steer to the left
-# even in situations when staying straight might be best. One approach to mitigate
-# this problem is data augmentation. There are many ways to augment data to expand
-# the training set and help the model generalize better. I could change the brightness
-# on the images or I could shift them horizontally or vertically. In this case,
-# I'll keep things simple and flip the images horizontally like a mirror, then invert
-# the steering angles and I should end up with a balanced dataset that teaches the
-# car to steer clockwise as well as counterclockwise. Just like using side camera data,
-# using data augmentation carries 2 benefits: 1. we have more data to use for training 
-# the network and 2. the data we use for the training the network is more comprehensive.
+# Augment the training set and help the model generalize better by flipping the
+# images horizontally like a mirror and inverting the steering angles. Now the
+# dataset should be more balanced, so the model can learn to steer the car 
+# clockwise and counterclockwise on the track.
 augmented_images, augmented_steering_measurements = [], []
 for image, measurement in zip(images, steering_measurements):
     augmented_images.append(image)
     augmented_steering_measurements.append(measurement)
     augmented_images.append(cv2.flip(image,1)) # flip img horizontally
     augmented_steering_measurements.append(measurement*-1.0) # invert steering
-    
-# now that I've loaded the images and steering measurements,
-# I am going to convert them to numpy arrays since that is the format
-# keras requires
+
+# Convert images and steering angles to numpy arrays for keras' required format
 X_train = np.array(images)
 y_train = np.array(steering_measurements)
 
-# next I am going to build the most basic network possible just to make sure everything is working
-# this single output node will predict my steering angle, which makes this
-# a regression network, so I don't have to apply an activation function
-
+# Keras CNN Model Implementation based on Nvidia Self-Driving Car Net Architecture
+# Network takes in an image, outputs a steering angle prediction
 from keras.models import Sequential
 from keras.layers import Flatten, Dense, Activation, Lambda, Cropping2D, Dropout, BatchNormalization
 from keras.layers.convolutional import Conv2D
 from keras.layers.pooling import MaxPooling2D
 
-# Building Net Architecture based on Nvidia Self Driving Car Neural Network 
+# Keras CNN Architecture
 model = Sequential()
-# Layer 1: Normalization
-# Data preprocessing to normalize input images
+# Layer 1: Data Preprocessing
+# Normalize input images to pixel value range [-0.5,+0.5] on all images
 model.add(Lambda(lambda x: (x/255.0) - 0.5, input_shape = (160, 320, 3)))
 # Crop2D layer used to remove top 40 pixels, bottom 30 pixels of image
 model.add(Cropping2D(cropping = ((50,20), (0,0))))
@@ -129,25 +116,16 @@ model.add(Activation('relu'))
 # Layer 10: Fully Connected
 model.add(Dense(1))
 
-# with the network constructed, I will compile the model
-# for the loss function, I will use mean squared error (mse)
-# What I want to do is minimize the error between the steering
-# measurement that the network predicts and the ground truth steering
-# measurement. mse is a good loss function for this
+# Configure the learning process with adam optimizer and mse loss function
+# MSE is a good loss function for helping with minimizing the error between
+# the steering angle predicted and the ground truth steering angle
 model.compile(loss='mse', optimizer='adam')
 
-# once the model is compiled, I will train it with the feature and label
-# arrays I just built. I'll also shuffle the data and split off 20% of
-# the data to use for a validation set. I set epochs to 7 since I saw
-# with 10 epochs (keras default) that validation loss decreases with just 7,
-# then increases. Thus, at 10 epochs, I may have been overfitting training data.
-# Hence, at 7 epochs, the validation loss decreases for almost all the epochs.
-# Change 7 epochs to 5 since we are training over more powerful neural net architecture
-# update with data augmentation: training is going fine and is training on twice as
-# many images as before. That makes sense since I copied each image and then flipped
-# the copy
+# Train the model with the image and steering angle arrays
+# Shuffle the data, split it off 20% to use for the validation set
+# Set epochs to 4 since validation loss decreases and the model is a powerful CNN
 model.fit(X_train, y_train, validation_split=0.2, shuffle=True, epochs=4)
 
-# finally I'll save the trained model, so later I can download it onto my 
+# Save the trained model, so later I can download it onto my 
 # local machine and see how well it works for driving the simulator
 model.save('model.h5')
