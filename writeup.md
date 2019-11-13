@@ -206,9 +206,9 @@ I used this training data for training the model. The validation set helped dete
 
 Now that we have a trained model, here is the video of the model driving the car safely around the track for 1 lap.
 
-[run5.mp4](run5.mp4)
+Keras Behavioral Cloning Demo Video: [run5.mp4](run5.mp4)
 
-[Keras Behavioral Cloning Demo](https://youtu.be/HwXI2E19SjY)
+run5.mp4 uploaded to YouTube: [Keras Behavioral Cloning Demo](https://youtu.be/HwXI2E19SjY)
 
 ## Udacity Self-Driving Car Engineer ND References
 
