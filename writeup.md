@@ -215,3 +215,9 @@ run5.mp4 uploaded to YouTube: [Keras Behavioral Cloning Demo](https://youtu.be/H
 - Udacity SDCE ND, Lesson 17 - Keras
 - Udacity SDCE ND, Lesson 18 - Transfer Learning
 - Udacity SDCE ND, Project: Behavioral Cloning 
+
+## Behavioral Cloning Article References
+
+- [End-to-End Self-Driving Car Using Behavioral Cloning](https://becominghuman.ai/end-to-end-self-driving-car-using-behavioral-cloning-5cad2610522c)
+- [Behavioral Cloning: Make a car drive itself...](https://towardsdatascience.com/my-learning-from-udacity-sdc-nanodegree-do-we-really-need-a-complex-cnn-and-hours-of-training-4f80e28af90b)
+- [Udacity Behavioral Cloning Project](https://medium.com/@erikshestopal/udacity-behavioral-cloning-using-keras-ff55055a64c)
