@@ -1,5 +1,6 @@
 import csv
 import cv2
+import sys
 import numpy as np
 
 def get_image(basepath, filepath):
@@ -7,10 +8,15 @@ def get_image(basepath, filepath):
     source_path = filepath
     # an easy way to update the path is to split the path on it's
     # slashes and then extract the final token, which is the filename
-    filename = source_path.split('/')[-1]
+    if sys.platform == 'win32':
+        filename = source_path.split('\\')[-1]
+    elif sys.platform == 'linux' or sys.platform == 'darwin':
+        filename = source_path.split('/')[-1]
+    # print(filename)
     # then I can add that filename to the end of the path to the IMG
     # directory here on the AWS instance
     img_path_on_fs = basepath + filename
+    # print(img_path_on_fs)
     # once I have the current path, I can use opencv to load the image
     image = cv2.imread(img_path_on_fs)
     return image
@@ -75,7 +81,7 @@ y_train = np.array(steering_measurements)
 # a regression network, so I don't have to apply an activation function
 
 from keras.models import Sequential
-from keras.layers import Flatten, Dense, Activation, Lambda, Cropping2D
+from keras.layers import Flatten, Dense, Activation, Lambda, Cropping2D, Dropout, BatchNormalization
 from keras.layers.convolutional import Conv2D
 from keras.layers.pooling import MaxPooling2D
 
@@ -87,23 +93,39 @@ model.add(Lambda(lambda x: (x/255.0) - 0.5, input_shape = (160, 320, 3)))
 # Crop2D layer used to remove top 40 pixels, bottom 30 pixels of image
 model.add(Cropping2D(cropping = ((50,20), (0,0))))
 # Layer 2: Convolutional. 24 filters, 5 kernel, 5 stride, relu activation function
-model.add(Conv2D(24,5,5, subsample = (2,2), activation = "relu"))
+model.add(Conv2D(24,5,5, subsample = (2,2)))
+model.add(BatchNormalization())
+model.add(Activation('relu'))
 # Layer 3: Convolutional. 36 filters
-model.add(Conv2D(36,5,5, subsample = (2,2), activation = "relu"))
+model.add(Conv2D(36,5,5, subsample = (2,2)))
+model.add(BatchNormalization())
+model.add(Activation('relu'))
 # Layer 4: Convolutional. 48 filters
-model.add(Conv2D(48,5,5, subsample = (2,2), activation = "relu"))
+model.add(Conv2D(48,5,5, subsample = (2,2)))
+model.add(BatchNormalization())
+model.add(Activation('relu'))
 # Layer 5: Convolutional. 64 filters
-model.add(Conv2D(64,3,3, activation = "relu"))
+model.add(Conv2D(64,3,3))
+model.add(BatchNormalization())
+model.add(Activation('relu'))
 # Layer 6: Convolutional. 64 filters
-model.add(Conv2D(64,3,3, activation = "relu"))
+model.add(Conv2D(64,3,3))
+model.add(BatchNormalization())
+model.add(Activation('relu'))
 ### Flatten output into a vector
 model.add(Flatten())
 # Layer 7: Fully Connected
 model.add(Dense(100))
+model.add(BatchNormalization())
+model.add(Activation('relu'))
 # Layer 8: Fully Connected
 model.add(Dense(50))
+model.add(BatchNormalization())
+model.add(Activation('relu'))
 # Layer 9: Fully Connected
 model.add(Dense(10))
+model.add(BatchNormalization())
+model.add(Activation('relu'))
 # Layer 10: Fully Connected
 model.add(Dense(1))
 
